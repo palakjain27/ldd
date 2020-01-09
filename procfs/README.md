@@ -1,0 +1,53 @@
+File : proc.c 
+******************************************************
+Description :
+ In the root directory there is vfs which is used to read the kernel information.
+
+The proc entry can also be used to pass data to the kernel by writing into the kernel, so there can be two kinds of proc entries.
+
+    An entry that only reads data from the kernel space.
+    An entry that reads as well as writes data into and from kernel space.
+
+****************creating procfs directory*************
+
+static inline struct proc_dir_entry *proc_create(const char *name, umode_t mode,struct proc_dir_entry *parent, const struct file_operations *proc_fops)
+	The function is defined in proc_fs.h.
+	<name> : The name of the proc entry
+	<mode> : The access mode for proc entry
+	<parent> : The name of the parent directory under /proc. If NULL is passed as parent, the /proc directory will be set as parent.
+	<proc_fops> : The structure in which the file operations for the proc entry will be created.
+
+*************Procfs File System**************
+
+Now we need to create file_operations structure proc_fops in which we can map the read and write functions for the proc entry.
+
+static struct file_operations proc_fops = {
+    .open = open_proc,
+    .read = read_proc,
+    .write = write_proc,
+    .release = release_proc
+};
+*********proc operations*********************
+1.static int open_proc(struct inode *inode, struct file *file);
+
+2.static int release_proc(struct inode *inode, struct file *file)
+
+3.static ssize_t write_proc(struct file *filp, const char *buff, size_t len, loff_t * off)
+
+4.static ssize_t read_proc(struct file *filp, char __user *buffer, size_t length,loff_t * offset)
+   
+	
+*****************Remove Proc Entry**********
+
+Proc entry should be removed in Driver exit function using the below function.
+
+void remove_proc_entry(const char *name, struct proc_dir_entry *parent);
+**********************************************
+
+The entry “meminfo”  gives the details of the memory being used in the system.
+To read the data in this entry just run
+
+cat /proc/meminfo
+
+
+

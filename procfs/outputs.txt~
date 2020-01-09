@@ -1,0 +1,13 @@
+1. make
+ 
+1. Insert module : 
+	sudo insmod proc.ko
+   
+2. procfs entry is there under /proc directory:
+	ls /proc/
+3. read procfs variable using cat
+	cat /proc/my_proc
+*****************************************
+output: try_proc_array
+****************************************
+4.echo "device driver proc" > /proc/my_proc
