@@ -1,0 +1,11 @@
+1. make
+ 
+1. Insert module : 
+	sudo insmod interrupts.ko
+   
+2. dmesg
+*************
+output
+*************
+3.Remove module 
+	sudo rmmod interrupts
