@@ -1,0 +1,43 @@
+*********Description***********************
+There are many ways to Communicate between the User space and Kernel Space, they are:
+IOCTL
+Procfs
+Sysfs
+Configfs
+Debugfs
+Sysctl
+UDP Sockets
+Netlink Sockets
+
+IOCTL is referred as Input and Output Control, which is used to talking to device drivers.It handles some specific operations of a device for which the kernel does not have a system call by default.The ability to perform various types of hardware control via the device driver.
+
+**********************************Programming************************
+1. Define IOCTL code in kernel code
+    #define "ioctl name" __IOX("magic number","command number","argument type")
+	    The Magic Number is a unique number or character that will differentiate our set of ioctl calls from the other ioctl calls. Some times the major number for the device is used here.
+	    Command Number is the number that is assigned to the ioctl .This is used to differentiate the commands from one another.
+	    The last is the type of data.
+
+2. long my_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+	<file>: is the file pointer to the file that was passed by the application.
+	<cmd> : is the ioctl command that was called from the user space.
+	<arg> : are the arguments passed from the user space.
+
+3. In user application also similar macros have to be defined for ioctl calls.
+
+4. Defining ioctl function in user space 
+	long ioctl( "file descriptor","ioctl command","Arguments");
+	<file descriptor>: This the open file on which the ioctl command needs to be executed, which would generally be device files.
+	<ioctl command>: ioctl command which is implemented to achieve the desired functionality.
+	<arguments>: The arguments that needs to be passed to the ioctl command.
+
+5. sys/module 
+
+6. sys/my_class, sys/my_class/my_device
+*********************************************************************		
+Steps to compile :
+1.Run				make
+2.Insert module			sudo insmod real_driver.ko
+3.compile and run test_app	gcc -o test_app test_app.c
+				sudo ./test_app
+

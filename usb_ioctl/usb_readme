@@ -1,0 +1,63 @@
+			*************************************************Description***************************************
+
+To communicate with the processor inside the system, USB port is used through which mouse,keyboard are connected.System has USB host controller driver to host USB and USB devices has USB client driver in it. USB core provides routine and structure required for both drivers. USB core is the main part of USB driver system. Kernel has helper thread called as khubd. This thread looks at all ports and checks whether any change happened on any port.Device Table is used to detect devices automatically. We have passed device ID so that once we connect the device driver, it will automatically get started.USB core gets utilized to provide hardware access to USB driver.
+
+
+					*****************Structure of usb device driver****************** 
+USB devices gets connected to USB driver using USB Interface. USB endpoints are useful to transfer data inside [IN endpoint] or outside [out endpoint]. The data is transferred in one direction only with the help of data pipe.
+
+1.struct usb_device (*device): kernel's representation of a USB device 
+2.struct usb_class_driver (skel_class): identifies a USB driver that wants to use the USB major number
+{
+	char *name;
+	char *(*devnode)(struct device *dev, umode_t *mode);
+	const struct file_operations *fops;
+	int minor_base;
+};
+
+3.device = interface_to_usbdev(interface) :attribute of struct usb_device which returns to usb_device.Function works as  Container device handle.
+
+4.struct usb_interface (*interface): We can collect all information which we needed. What usb device drivers talk to.USB device drivers attach to interfaces on a physical device. The protocol used to talk to an interface's endpoints can be defined in a usb "class" specification, or by a product's vendor.
+
+5. struct usb_host_interface (*iface_desc): array of alternate settings for this interface, stored in no particular order.
+
+6.struct usb_endpoint_descriptor *endpoint: describes the endpoints like its length.
+
+7.const struct usb_device_id *id ,struct usb_device_id pen_table[] :identifies USB devices for probing and hotplugging
+
+Device table entry for "new style" table-driven USB drivers. User mode code can read these tables to choose which modules to load. Declare the table as a MODULE_DEVICE_TABLE. A probe() parameter will point to a matching entry from this table.Use the driver_info field for each match to hold information tied to that match. In most cases, drivers will create a table of device IDs by using USB_DEVICE(), or similar macros designed for that purpose. They will then export it to userspace using MODULE_DEVICE_TABLE(),and provide it to the USB core through their usb_driver structure.
+
+
+8.struct usb_driver pen_driver :identifies USB interface driver to usbcore
+
+9.usb_register_dev(interface, &skel_class) :register a USB device, and ask for a minor number.This function also creates a usb class device in the sysfs tree.
+ 
+10.usb_deregister_dev(interface, &skel_class):deregister a USB device's dynamic minor.
+
+11.usb_register(&pen_driver): to register usb_driver
+12.usb_deregister(&pen_driver): to deregister usb_driver
+				
+USB Device number : First USB device is always root hub. USB core assign one number to root hub. Then port number on which the device is connected. Then configuration number and then interface number.
+
+
+					********Four parts of usb endpoints*********************
+1.control : confguration (bidirectional)
+2.interrupt: small data of keyboard mouse  
+3.bulk :large data 
+4.isochronous :blocks of audio video 
+						**************************
+@probe: Called to see if the driver is willing to manage a particular interface on a device.  If it is, probe returns zero and usesusb_set_intfdata() to associate driver-specific data with theinterface.  It may also use usb_set_interface() to specify the appropriate altsetting.  If unwilling to manage the interface, return -ENODEV, if genuine IO errors occurred, an appropriatenegative errno value.
+
+@disconnect: Called when the interface is no longer accessible, usually	because its device has been (or is being) disconnected or the	driver module is being unloaded.
+ 
+@unlocked_ioctl: Used for drivers that want to talk to userspace through the "usbfs" filesystem.  This lets devices provide ways to expose information to user space regardless of where they do (or don't) show up otherwise in the filesystem.
+
+
+************************************************************************
+Steps to compile :
+1.Run				make
+2.Insert module			sudo insmod usb_ioctl.ko
+3.to display kernel message     dmesg
+4.remove a module 		sudo rmmod usb
+5.compile user app		gcc usb_user.c
+6.run user app			sudo ./a.out
