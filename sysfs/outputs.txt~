@@ -1,0 +1,25 @@
+1. make
+ 
+1. Insert module : 
+	sudo insmod sysfs.ko
+   
+2. sysfs entry is there under /proc directory:
+	ls /sys/kernel
+  name : my_sys 
+3. check filesystem under my_sys
+	ls -l /sys/kernel/my_sysfs-rw-rw---- 1 root 
+	root 4096 Dec 17 16:37 my_value
+3. read file using cat
+	#cat /sys/kernel/etx_sysfs/my_value
+*****************************************
+output: 0
+****************************************
+4.modification using 
+
+#echo palak > /sys/kernel/my_sysfs/my_value
+
+5.read file again 
+ #cat /sys/kernel/my_sysfs/my_value 
+********************************
+output: palak
+*************************
