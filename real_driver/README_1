@@ -1,0 +1,155 @@
+                File : real_driver.c (character driver)
+
+********************Description*******************************
+Drivers for byte-oriented operations are referred as character drivers.Char devices are accessed through names in the filesystem called device files or simply nodes of the filesystem tree.They are conventionally located in the /dev directory.
+
+****************************************************************
+Major no -The major number identifies the driver associated with the device. A major number can also be shared by multiple device drivers. Major numbers can be read through /proc/devices
+
+Minor no -The device driver uses the minor number <minor> to distinguish individual physical or logical devices.
+
+******************************************************************************
+			Allocating and freeing device no
+a.Statically allocating
+int register_chrdev_region(dev_t first, unsigned int count, char *name);
+	* The dev_t type (defined in <linux/types.h>) is used to hold device numbers.
+	* successful registration returns 0 otherwise negative no.
+	* first is the beginning device number of the range you would like to allocate
+	* count is the total number of contiguous device numbers you are requesting
+	* name is the name of the device that should be associated with this number range; it will appear in /proc/devices and sysfs.
+
+b.Dynamically allocating 
+int alloc_chrdev_region(dev_t *dev, unsigned int firstminor, unsigned int count, char *name);
+	* dev is an output-only parameter that will, on successful completion, hold the first number in your allocated range.
+	* firstminor should be the requested first minor number to use; it is usually 0.
+	* count is the total number of contiguous device numbers you are requesting.
+	* name is the name of the device that should be associated with this number range; it will appear in /proc/devices and sysfs.
+
+Note: The disadvantage of dynamic assignment is that you can’t create the device nodes in advance. Check the device registration : cat /proc/devices | grep "my_Dev"
+
+
+void unregister_chrdev_region(dev_t first, unsigned int count);
+****************************************************************
+				Kernel data structure
+1.File operation 
+Device no has been reserved which are to be connected to driver operations through file operation. The structure is collection of function pointer.These file operation perform system calls.
+File_operations structure is initialized as follows:
+	struct file_operations my_fops = {
+	.owner =THIS_MODULE,
+	.read = my_read,
+	.write = my_write,
+	.ioctl =my_ioctl,
+	.open = my_open,
+	.release = my_release,
+	};
+
+2.File structure 
+It is created by the kernel on open and is passed to any function that operates on the file, until the last close.File refers to the structure and filp to a pointer to the structure.
+
+3.Inode structure 
+The inode structure is used by the kernel internally to represent files. Therefore, it is different from the file structure that represents an open file descriptor. There can be numerous file structures representing multiple open descriptors on a single file, but they all point to a single inode structure. Struct cdev is the kernel’s internal structure that represents char devices; this field contains a pointer to that structure when the inode refers to a char device file.
+
+
+*****************************************************************
+			Char device registration 
+The struct cdev that interfaces our device to the kernel.
+
+There are two ways of allocating and initializing one of these structures.
+1.It creates standalone structure in runtime 
+	struct cdev *my_cdev = cdev_alloc( );
+	my_cdev->ops = &my_fops;
+
+2.It embed the cdev structure within a device-specific structure of our own
+	void cdev_init(struct cdev *cdev, struct file_operations *fops);
+	int cdev_add(struct cdev *dev, dev_t num, unsigned int count);
+After this our device is “live” and its operations can be called by the kernel.
+	void cdev_del(struct cdev *dev);
+	dev is the cdev structure,
+	num is the first device number to which this device responds file operation structure 
+
+****************************************************************
+Function used:
+*****************************************************************
+
+1. int my_open(struct inode *inode, struct file *file)
+The region of memory used by a device, is variable in length. A call to kmalloc attempts to allocate size bytes of memory; the return value a pointer to that memory or NULL if the allocation fails.
+void *kmalloc(size_t size, gfp_t flags);
+	size_t size– how many bytes of memory are required.
+	gfp_t flags– the type of memory to allocate.
+
+The flags argument may be one of:
+
+	GFP_USER – Allocate memory on behalf of user. May sleep.
+	GFP_KERNEL – Allocate normal kernel ram. May sleep.
+	GFP_ATOMIC – Allocation will not sleep. May use emergency pools. For example, use this inside interrupt handlers.
+	GFP_HIGHUSER – Allocate pages from high memory.
+	GFP_NOIO – Do not do any I/O at all while trying to get memory.
+	GFP_NOFS – Do not make any fs calls while trying to get memory.
+	GFP_NOWAIT – Allocation will not sleep.
+	__GFP_THISNODE – Allocate node-local memory only.
+	GFP_DMA – Allocation suitable for DMA. Should only be used for kmalloc caches. Otherwise, use a slab created with SLAB_DMA.
+
+2.void kfree(const void *objp)
+
+	*objp – pointer returned by kmalloc
+
+2. int my_release(struct inode *inode, struct file *filp)
+*****************************************************************************
+Write operation
+ssize_t write(struct file *filp, const char __user *buff,size_t count, loff_t *offp);
+unsigned long copy_from_user(void *to, const void __user *from, unsigned long  n);
+	to – Destination address, in kernel space
+	from – Source address in user space
+	n – Number of bytes to copy
+The return value is the amount of memory still to be copied. This function is used to Copy data from  user space to device (Copy data from user space to kernel space).
+*****************************************************************************
+read operation
+ssize_t read(struct file *filp, char __user *buff,size_t count, loff_t *offp);
+This function is used to Copy data from device to user space (Copy data from kernel space to user space).
+unsigned long copy_to_user(const void __user *to, const void *from, unsigned long  n);
+	to – Destination address, in user space
+	from – Source address in kernel space
+	n – Number of bytes to copy
+*********************************************************************************
+						Class 
+Many parts of the system need to know what kinds of devices are available.The device model includes a mechanism for assigning devices to classes, which describe those devices at a higher, functional level and allow them to be discovered from user space.The class subsystem is the best way of exporting information to userspace.It is to expose attributes containing device numbers to enable the automatic creation of device nodes.The real purpose of a class is to serve as a container for the devices that are members of that class.
+
+create class  --/sys/class/(to identify different types of drivers)
+1.struct class * class_create (struct module *owner, const char *name);
+	owner – pointer to the module that is to “own” this struct class
+	name – pointer to a string for the name of this class
+void class_destroy (struct class * cls);
+
+The real purpose of creating a simple class is to add devices to it; that task is achieved with:	
+Creating device file 
+Device files provide a convenient way to access system resources without requiring the applications programmer to know how the underlying device works.
+1.Manually 
+mknod -m <permissions> <name> <device type> <major> <minor>     
+ex: mknod -m 666 /dev/my_device c 246 0   check :ls -l /dev/ | grep "my_device"
+	<name> – your device file name that should have full path (/dev/name)
+	<device type> – Put c or b
+	c – Character Device
+	b – Block Device
+	<major> – major number of your driver
+	<minor> – minor number of your driver
+	-m <permissions> – optional argument that sets the permission bits of the new device file to permissions
+	
+2.Automatically
+The automatic creation of device files can be handled with udev. Udev is the device manager for the Linux kernel that creates/removes device nodes in the /dev directory dynamically.	
+create device file   --A struct device will be created in sysfs, registered to the specified class.(sys/my_class/my_device)
+struct device *device_create (struct *class, struct device *parent,dev_t dev, const char *fmt, ...);
+	class – pointer to the struct class that this device should be registered to
+	parent – pointer to the parent struct device of this new device, symbolic link is created to sys/device 
+	devt – the dev_t for the char device to be added which holds device no.
+	fmt – string for the device’s name
+void device_destroy (struct class * class, dev_t devt)
+
+*****************************************************************************		
+Steps to compile :
+1.Run				make
+2.Insert module			sudo insmod real_driver.ko
+3.Writing 			echo 1 > /dev/my_device
+4.Reading			cat /dev/my_device
+5.compile and run test_app	gcc -o test_app test_app.c
+				sudo ./test_app
+
