@@ -1,0 +1,121 @@
+                                                                                         BLOCK DEVICE DRIVER
+                                                                                        ---------------------
+
+  * Provides access to devices that transfer randomly accessible data in blocks, or fixed size chunks of data (e.g., 4KB)
+  
+  * Block devices are characterized by random access to data organized in fixed-size blocks. Examples of such devices are hard drives, CD-ROM drives, RAM disks, etc. The speed of block devices is       
+  generally much higher than the speed of character devices, and their performance is also important.
+  
+  * From the kernel perspective, the smallest logical unit of addressing is the block. Although the physical device can be addressed at sector level, the kernel performs all disk operations using blocks. 
+  Since the smallest unit of physical addressing is the sector, the size of the block must be a multiple of the size of the sector. Additionally, the block size must be a power of 2 and can not exceed     
+  the size of a page. The size of the block may vary depending on the file system used, the most common values being 512 bytes, 1 kilobytes and 4 kilobytes.
+
+                                                                                         REGISTRATION
+                                                                                        --------------
+
+* To register a block I/O device, function register_blkdev() is used. To unregister a block I/O device, function unregister_blkdev() is used.
+    
+  * int register_blkdev(unsigned int major, const char *name)
+        -major:  major device number
+        -If 0, kernel will allocate and return a new major number
+        -It displays in /proc/devices
+
+* To unregister:
+
+	 * int unregister_blkdev(unsigned int major, const char *name);
+
+Block devices are also visible through the sysfs filesystem, in  the  /sys/block/  directory
+
+                                                                                       GENDISK STRUCTURE
+                                                                                     ---------------------
+* struct gendisk (declared in <linux/genhd.h>) is the kernel’s representation of an individual block device.
+
+    - int major
+    - int first_minor
+    - int minors
+    - char disk_name[32]
+    - struct block_device_operations *fops
+    - struct request_queue *queue
+    - sector_t capacity
+                                                                                    TO INITIALIZE BLOCK DRIVER
+                                                                                  -------------------------------
+
+* Allocating a gendisk structure: 
+
+  - struct gendisk *alloc_disk(int minors);
+
+* Allocate a request queue:
+
+  - struct request_queue *blk_init_queue(request_fn_proc *rfn, spinlock_t *lock);
+
+* Initialize a gendisk structure:
+  
+  - Fields major, first_minor, fops, disk_name and queue should at the minimum be initialized private_data can be used to store a pointer to some private information for the disk.
+
+* Set the capacity:
+  
+  - void set_capacity(struct gendisk *disk, sector_t size);
+
+* Add the disk to the system:
+  
+  - void add_disk(struct gendisk *disk);
+
+                                                                                    TO FREE BLOCK DRIVER
+                                                                                ----------------------------
+
+* Unregister the disk:
+
+  - void del_gendisk(struct gendisk *gp);
+
+* Free the request queue:
+
+  - void blk_cleanup_queue(struct request_queue *);
+
+* Drop the reference taken in alloc_disk():
+
+  - void put_disk(struct gendisk *disk);
+
+                                                                                    BLOCK DEVICE OPERATIONS
+                                                                                ------------------------------
+* open() and release(), called when a device handled by the driver is opened and closed.
+
+* ioctl() for driver specific operations. unlocked_ioctl() is the non­BKL variant, and compat_ioctl() for 32 bits processes running on a 64 bits kernel.
+
+* media_changed() and revalidate() required for removable media support.
+
+* getgeo(), to provide geometry informations to userspace.
+
+                                                                REQUEST QUEUE
+                                                              -----------------
+* When the I/O scheduler schedules a data transfer, it queues the request in a list, ordered in such a way that it maximizes system performance.
+
+* Information about the transfer are available in the struct request
+    - sector: the position in the device at which the transfer should be made.
+    - current_nr_sectors: the number of sectors to transfer.
+    - buffer: the location in memory where the data should be read or written to.
+    - rq_data_dir(): the type of transfer, either READ or WRITE
+
+__blk_end_request_all() or blk_end_request() is used to notify the completion of a request. __blk_end_request_all() must be used when the queue lock is already held.
+                                                                  
+                                                                  BIO STRUCTURE
+                                                              --------------------
+
+* A request is composed of several segments, that are contiguous on the block device, but not necessarily contiguous in physical memory.
+
+* A struct request is in fact a list of struct bio
+
+* A bio is the descriptor of an I/O request submitted to the block layer. bios are merged together in a struct request by the I/O scheduler.
+
+* As a bio might represent several pages of data, it is composed of several struct bio_vec, each of them representing a page of memory.
+
+
+                                                                PROCESS A REQUEST
+                                                              ---------------------
+This function is called when the kernel considers that the driver should process I/O requests. The function must start processing the requests from the queue, The lock parameter, sent when creating a request queue, is a spinlock that the kernel holds when executing the request method. For this reason, the request function runs in an atomic context and must follow the rules for atomic code (it does not need to call functions that can cause sleep, etc.). This lock also ensures that no other requests for the device will be added to the queue while the request function is running.
+
+
+                                                                FINISH A REQUEST
+                                                              --------------------
+When the driver has finished transferring all the sectors of a request to/from the device, it must inform the I/O subsystem by calling the blk_end_request() function.
+  
+
