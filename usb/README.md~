@@ -1,0 +1,69 @@
+File : usb.c
+
+***************************Description***************************************
+System has USB host controller driver to host USB and USB devices has USB client driver in it.
+USB core provides routine and structure required for both drivers.USB core is the main part of USB driver system.
+Kernel has helper thread called as khubd. This thread looks at all ports and checks whether any change happened on any port.
+
+We can create Device Table to detect devices automatically. We have passed device ID so that once we connect the device driver, it will automatically get started.
+For USB device we have to pass first parameter as usb in device table. Then we have to pass name of device ID table.
+
+*****************Structure of usb device driver****************** 
+USB devices gets connected to USB driver using USB Interface. USB endpoints are useful to transfer data inside [IN endpoint] or outside [out endpoint]. The data is transferred in one direction only with the help of data pipe.
+
+
+**************************programming***************************
+USB API usb_register and usb_deregister is utilized to register and deregister usb device.
+
+We can create Device Table to detect devices automatically. We have passed device ID so that once we connect the device driver, it will automatically get started.
+
+The device probe function runs and on removing the device disconnect function runs.
+
+Probe and disconnect runs for interface only and these are the first parameters.
+
+USB Device number : First USB device is always root hub. USB core assign one number to root hub. Then port number on which the device is connected. Then configuration number and then interface number.
+
+********Four parts of usb endpoints*********************
+1.control : confguration 
+2.interrupt: small data of keyboard mouse  
+3.bulk :large data 
+4.isochronous :blocks of audio video 
+
+******************USB Urbs******************
+Kernel talks with USB devices using USB request block. USB urbs are useful for data exchange with the endpoint.
+URB works as follows:
+1.USB device driver creates URB.
+2. Endpoint gets assigned to USB device.
+3. URB uses device driver to register it in USB core.
+4. Then USB core register this in USB host controller driver.
+5. USB host controller processes and transfers USB data.
+6. Once URB controller get completed; USB host controller acknowledges to USB device driver.
+
+USB have two data transfer methods: one method use USB and another method does not need URB because URB gets set automatically inside the function.
+
+urb create:
+struct urb *usb_alloc_urb(int iso_packets,int mem_flags);
+where 
+	In this function iso_packets parameter will give a count of isochronous packets to transfer.
+	If we are not using isochronous method to transfer data then it returns value as ‘0’.
+	mem_flags is a flag similar as we sent flag to kmalloc function.
+
+Submit URB:
+int usb_submit_urb(struct urb *urb, int mem_flags);
+Here pointer and flag of URB will be sent and that URB will be transfer to device.
+	One out of three flags will be passed:
+	GFP_ATOMIC= this flag will be sent when Caller handles this URB lock and current->state is not TASK_RUNNING state.
+	GFP_NOIO = this flag will be sent in case of block IO in patch and storage device error handling part.
+	GFP_KERNEL =Else by default flag
+
+To create buffer:
+usb_buffer_alloc(dev->udev,count, GFP_KERNEL, &urb->transfer_dma);
+
+Using this function we can create buffer for DMA (Direct Memory Access). By this way data will be transfered in fast speed.
+
+************************************************************************
+Steps to compile :
+1.Run				make
+2.Insert module			sudo insmod usb.ko
+3.to display kernel message     dmesg
+4.remove a module 		sudo rmmod usb
