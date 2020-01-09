@@ -1,0 +1,15 @@
+1. make (build a driver)
+2. lsmod: This command shows list of device drivers (modules) available in computer system.
+3. Insert module : 
+	sudo insmod export.ko 
+	sudo insmod export1.ko 
+   See the output :
+	dmesg | tail -10  
+
+4. Remove module
+	sudo rmmod export
+	sudo rmmod export
+   See the output :
+	dmesg | tail -10
+
+

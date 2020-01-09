@@ -1,0 +1,19 @@
+1. make (build a driver)
+2. lsmod: This command shows list of device drivers (modules) available in computer system.
+3. Insert module : 
+	sudo insmod export.ko 
+	sudo insmod export1.ko 
+   See the output :
+	dmesg | tail -10  
+4.shared functions and variables are available in “Module.symvers"
+5. cat /proc/kallsyms | grep my_shared_func
+   cat /proc/kallsyms | grep count    --------to check whether our shared function and variable become the part of kernel’s symbol table or not.
+6. we can read the driver by using sudo cat /dev/my_device1
+7.See the logs in dmesg 	dmesg | tail -10     (to see kernel prints)
+8. Remove module
+	sudo rmmod export
+	sudo rmmod export
+   See the output :
+	dmesg | tail -10
+
+

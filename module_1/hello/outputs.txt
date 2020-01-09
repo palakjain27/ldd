@@ -1,0 +1,47 @@
+1. make (build a driver)
+2. lsmod: This command shows list of device drivers (modules) available in computer system.
+3. Insert module : 
+	sudo insmod hello.ko 
+   See the output :
+	dmesg | tail -10   
+
+output : ****************************************************************
+	 *
+	[25575.703894] r8169 0000:01:00.0 eth0: link down
+	[25712.465392] Exit
+	[25717.831387] Hello World<6>[25811.968142] r8169 0000:01:00.0 eth0: link up
+	[25831.953322] Exit
+	[25923.042444] Hello Worldsystemd-hostnamed[8172]: Warning: nss-myhostname is not installed. Changing the local hostname might make it unresolveable. Please install nss-myhostname!
+	[26471.189703] Exit
+	[26619.099478] Hello WorldExit
+	[26866.795654] Hello World
+	[26883.553808] Exiting ...
+	[26956.873677] Hello World
+	 *
+	 ***************************************************************
+4. See the modules that get inserted:
+	cat /proc/modules | grep hello
+
+output : **************************************************************
+	 *  hello 16384 0 - Live 0x0000000000000000 (OE)
+	 **************************************************************
+
+5. Remove module
+	sudo rmmod hello
+   See the output :
+	dmesg | tail -10
+
+output : **************************************************************
+	 *
+	[25712.465392] Exit
+	[25717.831387] Hello World<6>[25811.968142] r8169 0000:01:00.0 eth0: link up
+	[25831.953322] Exit
+	[25923.042444] Hello Worldsystemd-hostnamed[8172]: Warning: nss-myhostname is not installed. Changing the local hostname might make it unresolveable. Please install nss-myhostname!
+	[26471.189703] Exit
+	[26619.099478] Hello WorldExit
+	[26866.795654] Hello World
+	[26883.553808] Exiting ...
+	[26956.873677] Hello World
+	[27059.472717] Exiting ...
+	 *
+	 **************************************************************
