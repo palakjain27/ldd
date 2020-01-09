@@ -1,0 +1,161 @@
+/*****************************************************************************************
+@filename : test_string.c
+@author	 : Palak Jain
+@teamLead: Rajesh Dommaraju 
+@etails  : It is a test app, in the user sapce which communicates between user and kernel space we can do all open, read, write, close operations on device file.
+@icense  : SpanIdea Systems Pvt. Ltd. All rights reserved.
+************************************************************************************************/
+
+/*******************************************************************************
+			INCLUDES
+*******************************************************************************/	
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include<sys/ioctl.h>
+
+/*******************************************************************************
+			IOCTL MACROS
+*******************************************************************************/	
+ 
+#define WR_CHAR 				_IOW('4','m',char*)
+#define RD_CHAR 				_IOR('4','n',char*)
+#define WR_STRING 				_IOW('4','o',char*)
+#define RD_STRING 				_IOR('4','p',char*) 
+#define OPERATIONS 				_IOWR('4','f',int*)
+#define RD_MAJOR 				_IOR('4', 'g', int32_t *)
+#define RD_MINOR 				_IOR('4', 'h', int32_t *)
+#define RD_CHANGECASE 				_IOR('4', 'i', char *)
+#define RD_REVERSE	 			_IOR('4', 'j', char *)
+#define RD_VALUE 				_IOW('4', 'k', int32_t *)
+#define WR_VALUE 				_IOR('4', 'l', int32_t *)
+#define SIZE 	 				100
+
+/**********************************************************************************************
+function	 : main
+description	 : User app to perform file operation between user and kernel  
+input param      : NONE
+output param     : NONE
+**********************************************************************************************/ 
+int main()
+{
+        int fd,a,count;
+        char value, number;
+	int32_t major,minor; 
+	int no,v;
+	char 	write_buff[SIZE], read_buff[SIZE], changed_case_buff[SIZE];	
+        
+	printf("\nOpening Driver\n");
+        fd = open("/dev/my_device", O_RDWR);
+        if(fd < 0) 
+	{
+                printf("Cannot open device file...\n");
+                return 0;
+        }
+
+while(1)
+{
+	int n ;
+	printf("\n-----Choices-----\n");
+	printf("1. Write Char Value\n");
+	printf("2. Read Char Value\n");
+	printf("3. Write string\n");
+	printf("4. Read string\n");
+	printf("5.check the no is even or odd\n");
+	printf("6. Read Major and Minor\n");
+	printf("7. Read Changed case of Message\n");
+	printf("8. Read Reverse of Message\n");
+	printf("9. Write integer value\n");
+	printf("10. Read integer value\n");
+	printf("11. Exit\n");
+	printf("-----------------\n");
+	printf("\n enter any options between 1--12\n");
+	scanf("%d", &n);
+
+	switch(n) {
+		case 1: 
+			printf( "Enter the value to send\n" );
+			scanf( "%d",&no );
+			printf( "Sending....\n" );
+			ioctl( fd, WR_VALUE, (int*)&no );
+			printf( "Done..!\n" );
+			break;
+		case 2: 
+			printf( "Reading value from the Driver\n" );
+			ioctl( fd, RD_VALUE, (int*)&v );
+			printf( "Done...!\n" );
+			printf( "Value is %d\n", v );
+			break;
+		
+		
+		case 3:
+			printf("Enter the string to send\n");
+			scanf("%[^\t\n]s", write_buff);
+                       ioctl(fd, WR_STRING, (char*) &write_buff);
+			printf("sent\n");
+                        break;
+		case 4:
+                        printf("Reading string from Driver\n");
+        		ioctl(fd, RD_STRING, (char*) &read_buff);
+			printf("Done\n");
+		         printf("Value is %s\n",read_buff);
+                        break;
+		case 5:
+                        printf("enter the value \n");
+			scanf("%d", &a);
+        		ioctl(fd, OPERATIONS, (int*) &a);
+			if (a==1)
+			printf("no is odd\n");
+			else 
+			printf("no is even\n");
+                        break;
+		case 6:
+			 ioctl( fd, RD_MAJOR, (int32_t*)&major );
+			 ioctl( fd, RD_MINOR, (int32_t*)&minor );
+			 printf( "Major no is %d and Minor no is %d\n", major, minor );
+			 break;
+		case 7: 
+			printf( "Reading Changed case of the message\n" );
+			ioctl( fd, RD_CHANGECASE, (char *)&changed_case_buff );
+			printf( "Done..!\n" );
+			printf( "Changed case message is %s\n", changed_case_buff );
+			break;
+		case 8: 
+			printf( "Reading Reverse of the message\n" );
+			ioctl( fd, RD_REVERSE, (char *)&changed_case_buff );
+			printf( "Done..!\n" );
+			printf( "Changed case message is %s\n", changed_case_buff );
+			break;
+		
+		case 9:
+                        printf("Enter the char to send\n");
+                        scanf("%c",&number);
+                        ioctl(fd, WR_CHAR, (char) &number);
+                        printf("done\n");
+                        break;
+                case 10:
+                        printf("Reading char from Driver\n");
+                        ioctl(fd, RD_CHAR, (char) &value);
+                        printf("done\n");
+                        printf("Value is %c\n",value);
+                        break;
+
+		case 11:
+			printf("Closing Driver\n");
+        		close(fd);
+			exit(1);
+			break;
+		
+		default:
+			printf ("invalid option");
+			break;
+        }
+ }
+    
+return 0;    
+        
+}

@@ -1,0 +1,50 @@
+make
+ 
+1. Insert module : 
+	sudo insmod real_driver.ko
+   
+2. See thedevice file that get inserted:
+	ls-l /dev/ 
+
+output : **************************************************************
+	 *  
+	 **************************************************************
+
+3. Compile the run the user file 
+	gcc -o test_app test_app.c
+   See the output :
+	sudo ./test_app
+
+output : **************************************************************
+	 *
+	 *********************************
+	*******WWW.EmbeTronicX.com*******
+	****Please Enter the Option******
+		1. Write               
+		2. Read                 
+		3. Exit                 
+	*********************************
+	press 1
+	Your Option = 1
+	Enter the string to write into driver :palak
+	Data Writing ...Done!
+	****Please Enter the Option******
+		1. Write               
+		2. Read                 
+		3. Exit                 
+	*********************************
+	press 2
+	Your Option = 2
+	Data Reading ...Done!
+
+	Data = palak
+
+	****Please Enter the Option******
+		1. Write               
+		2. Read                 
+		3. Exit                 
+	*********************************
+	press 3
+	Your Option = 3
+	 *
+	 **************************************************************
